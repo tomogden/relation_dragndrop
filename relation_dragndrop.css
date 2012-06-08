@@ -1,0 +1,45 @@
+/**
+ * relation_dragndrop.css
+ *
+ */
+
+.delete-button {
+  background: transparent url(images/CloseX.png) no-repeat;
+  position: absolute;
+  top: -10px;
+  left: 0;
+  color: transparent;
+  opacity: 0.7;
+  width: 20px;
+  height: 20px;
+}
+
+.delete-button:hover, 
+.delete-button:focus {
+  opacity: 1.0;
+}
+
+.delete-button span {
+  display: none;
+}
+
+.inner-count {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  height: 1.5em;
+  border-radius: 0.75em;
+  background: #1960A6;
+  color: white;
+  font-size: 0.75em;
+  padding: 0 .5em;
+  line-height: 1.5em;
+}
+
+.hidden-element {
+  display: none;
+}
+
+.invisible {
+  visibility: hidden;
+}

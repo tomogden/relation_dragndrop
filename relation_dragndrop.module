@@ -1,0 +1,159 @@
+<?php
+/**
+ * @file
+ * Provide drag and drop interface for creating relations.
+ *
+ */
+
+/**
+ * Implements hook_help.
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+  function relation_dragndrop_help($path, $arg) {
+    switch ($path) {
+      case "admin/help#relation_dragndrop":
+        return '<p>' . t("This module provides a drag and drop method of creating relations. First, set your permissions. Then use your configuration to indicate what node types you want relating to what. After you have created a layout where nodes are displayed on the same page together, you can just drag one item and drop it onto another to form a relation.") . '</p>';
+        break;
+    }
+  }
+
+/**
+ * Implements hook_permission().
+ *
+ */
+  function relation_dragndrop_permission() {
+    return array(
+     'access relation_dragndrop' => array(
+        'title' => t('Manage relations with drag and drop'),
+        'description' => t('Define who can add relations using drag and drop or click to delete relations.'),
+      ),
+    );
+  }
+
+/**
+ * Implements hook_menu().
+ *
+ */
+function relation_dragndrop_menu() {
+    // AJAX: add a relation
+    $items['relation_dragndrop/add/%'] = array(
+     'page callback'=>'relation_dragndrop_insert_relation',
+     'page arguments' => array(2, 3, 4),
+     'access arguments' => array('access relation_dragndrop'),
+     'type'=>MENU_CALLBACK,
+    );
+    // AJAX: delete a relation
+    $items['relation_dragndrop/delete/%'] = array(
+     'page callback'=>'relation_dragndrop_delete_relation',
+     'page arguments' => array(2),
+     'access arguments' => array('access relation_dragndrop'),
+     'type'=>MENU_CALLBACK,
+    );
+    // AJAX: checking for permissions in jQuery
+    $items['relation_dragndrop/permission/%'] = array(
+     'page callback'=>'relation_dragndrop_check_permission',
+     'page arguments' => array(2),
+     'access arguments' => array('access relation_dragndrop'),
+     'type'=>MENU_CALLBACK,
+    );
+    // AJAX: counting relations in source container
+    $items['relation_dragndrop/container-count/%'] = array(
+     'page callback'=>'relation_dragndrop_container_count',
+     'page arguments' => array(2),
+     'access arguments' => array('access relation_dragndrop'),
+     'type'=>MENU_CALLBACK,
+    );
+
+    return $items;
+  }
+  
+/**
+ * Basic relation adding function. 
+ *
+ * @param $relation_type
+ *   Name of the entity bundle or node type.
+ * @param $source_endpoint
+ *   Source endpoint string containing entity type and ID, formatted as 'node-99'.
+ * @param $target_endpoint
+ *   Target endpoint string containing entity type and ID, formatted as 'node-99'.
+ * @return $rid
+ *   ID of the newly saved relation.
+ */
+  function relation_dragndrop_insert_relation($relation_type = NULL, $source_endpoint = NULL, $target_endpoint = NULL) {
+    $entity_key_keys = array('entity_type', 'entity_id');
+    $entity_keys[] = array_combine($entity_key_keys, explode('-',$source_endpoint));
+    $entity_keys[] = array_combine($entity_key_keys, explode('-',$target_endpoint));
+    $source_id = array_pop(explode('-',$source_endpoint));
+    
+    if (isset($relation_type)) {
+      $relation = relation_create($relation_type, $entity_keys);
+      $rid = relation_save($relation);
+    }
+    
+    // Display ONLY the results, don't display within a themed page.
+    print drupal_json_encode(array('source_id'=>$source_id, 'rid'=>$rid));
+  }
+
+/**
+ * Basic relation deleting function. 
+ *
+ * @param $rid
+ *   The ID of the relation being removed.
+ */
+  function relation_dragndrop_delete_relation($rid = NULL) {
+    if (isset($rid)) {
+      if ($rid > 0) {
+        relation_multiple_delete(array($rid));
+        return(TRUE);
+      }
+    }
+    return(FALSE);
+  }
+
+/**
+ * Callback function for checking permissions via AJAX.
+ *
+ * @param $access
+ *   The permission being checked for, such as 'administer nodes'.
+ */
+  function relation_dragndrop_check_permission($access = NULL) {
+    $response = user_access($access);
+
+    // Display ONLY the results, don't display within a themed page.
+    print drupal_json_encode($response);
+  }
+
+/**
+ * Callback function for counting relations for a source container.
+ *
+ * @param $nid
+ *   ID of the source entity.
+ */
+  function relation_dragndrop_container_count($nid = NULL) {
+    $query = "
+      SELECT COUNT(*) AS expression 
+      FROM field_data_endpoints src
+      INNER JOIN relation 
+        ON relation.rid = src.entity_id 
+      INNER JOIN field_data_endpoints tgt 
+        ON tgt.entity_id = relation.rid 
+        AND tgt.delta = 1       
+      WHERE src.endpoints_entity_id = $nid 
+        AND src.delta = 0 
+    ";
+
+    $result = db_query($query);
+    foreach($result as $record) $count = $record->expression;
+    
+    $title = t("This container has @count items.",array('@count'=>$count));
+    $element = "<div class=\"inner-count container-count-$nid\" id=\"container-count-$nid\" title=\"$title\">$count</div>";
+    
+    // Display ONLY the results, don't display within a themed page.
+    print drupal_json_encode(array('nid'=>$nid, 'count'=>$count, 'element'=>$element));
+  }

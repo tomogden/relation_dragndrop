@@ -1,0 +1,11 @@
+name = Relation Drag and Drop
+description = Adds a drag and drop UI for generating relations.
+core = 7.x
+
+configure = admin/config/user-interface/relation_dragndrop
+
+dependencies[] = relation
+
+stylesheets[all][] = relation_dragndrop.css
+
+scripts[] = relation_dragndrop.js
