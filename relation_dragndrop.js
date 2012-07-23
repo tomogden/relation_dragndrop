@@ -38,7 +38,8 @@ var addEvent = (function () {
     Drupal.behaviors.relation_dragndrop_add = {
       attach: function (context, settings) {
 // Limit to Profile Page (temporary until converted to js call from PHP)
-if(location.href.indexOf('profile-main') >= 0){
+//if(location.href.indexOf('profile-main') >= 0){
+if(location.href.indexOf('user') != -1){
         var dragLinks = document.querySelectorAll(".draggable-element"), dragElement = null; // querySelectorAll is IE8+ compatible
         var targetlinks = document.querySelectorAll('div.drop-target'), target = null; // querySelectorAll is IE8+ compatible
         if((dragLinks.length > 0) && (targetlinks.length > 0)) {
